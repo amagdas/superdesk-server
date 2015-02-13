@@ -53,6 +53,15 @@ class ResetPasswordResource(Resource):
 
 class ResetPasswordService(BaseService):
 
+    def check_if_valid_token(self, token):
+        if not token:
+            raise SuperdeskApiError.badRequestError('Token must be provided.')
+
+        res = list(super().get(None, {'token': token}))
+        if not res:
+            raise SuperdeskApiError.unauthorizedError('Invalid token received')
+        return [doc.get('_id') for doc in res]
+
     def create(self, docs, **kwargs):
         for doc in docs:
             email = doc.get('email')
@@ -63,6 +72,8 @@ class ResetPasswordService(BaseService):
                 return self.reset_password(doc)
             if email:
                 return self.initialize_reset_password(doc, email)
+            if key:
+                return self.check_if_valid_token(key)
 
             raise SuperdeskApiError.badRequestError('Either key:password or email must be provided')
 
